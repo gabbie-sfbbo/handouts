@@ -1,37 +1,39 @@
 ## Vector Data
 
-library(...)
+library(sf)
 
-shp <- 'data/cb_2016_us_county_5m'
-counties <- ...(
-    ...,
+shp <- '../data/cb_2016_us_county_5m'
+counties <- st_read(
+    shp,
     stringsAsFactors = FALSE)
 
-sesync <- ...(
-    ...(c(-76.503394, 38.976546)),
+sesync <- st_sfc(st_point(
+    c(-76.503394, 38.976546)),
     crs = st_crs(counties))
 
 ## Bounding box
 
-library(...)
-counties_md <- ...
+library(dplyr)
+counties_md <- filter(
+    counties,
+    STATEFP == '24')
 
 ## Grid
 
-... <- ...(counties_md, ...)
+grid_md <- st_make_grid(counties_md, n=4)
 
 
 ## Plot Layers
 
-plot(...)
-plot(..., add = ...)
-plot(..., col = "green", pch = 20, ...)
+plot(grid_md)
+plot(counties_md['ALAND'], add = TRUE)
+plot(sesync, col = "green", pch = 20, add=TRUE)
 
 ## Coordinate Transforms
 
-shp <- 'data/huc250k'
+shp <- '../data/huc250k'
 huc <- st_read(
-    ...,
+    shp,
     stringsAsFactors = FALSE)
 
 prj <- '+proj=aea +lat_1=29.5 +lat_2=45.5 \
@@ -41,37 +43,38 @@ prj <- '+proj=aea +lat_1=29.5 +lat_2=45.5 \
 
 counties_md <- st_transform(
     counties_md,
-    ...)
-huc <- ...(huc, ...)
-sesync <- ...
+    crs=prj)
+huc <- st_transform(huc, crs=prj)
+sesync <- st_transform(sesync, crs=prj)
 
 plot(counties_md$geometry)
-plot(...,
+plot(huc$geometry,
      border = 'blue', add = TRUE)
-plot(..., col = 'green',
+plot(sesync, col = 'green',
      pch = 20, add = TRUE)
 
 ## Geometric Operations
 
-state_md <- ...
-plot(...)
+state_md <- st_union(counties_md)
+plot(state_md)
 
-huc_md <- ...(..., ...)
+huc_md <- st_intersection(huc, state_md)
 
-plot(..., border = 'blue',
+plot(state_md)
+plot(huc_md, border = 'blue',
      col = NA, add = TRUE)
 
 ## Raster Data
 
-library(...)
-nlcd <- raster(...)
+library(raster)
+nlcd <- raster("../data/nlcd_agg.grd")
 
 ## Crop
 
-... <- matrix(..., ...)
-nlcd <- crop(..., ...)
+extent <- matrix(st_bbox(huc_md), nrow=2)
+nlcd <- crop(nlcd, extent)
 plot(nlcd)
-plot(...)
+plot(huc_md, col = NA, add = TRUE)
 
 ## Raster data attributes
 
